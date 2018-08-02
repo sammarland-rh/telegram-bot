@@ -6,10 +6,9 @@ const readline = require('readline');
 const google = require('googleapis');
 const reply = Telegraf;
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
-var authFilePath = process.env.CREDS_FILE;
+var creds = JSON.parse(process.env.creds);
 var GoogleSpreadsheet = require('google-spreadsheet');
 var async = require('async');
-var creds = require('CREDS_FILE');
 var sheetID = process.env.SHEET_ID;
 
 // Create a document object using the ID of the spreadsheet - obtained from its URL.
