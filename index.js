@@ -33,7 +33,7 @@ bot.use((ctx, next) => {
 });
 
 // Text messages handling
-bot.hears('nominate', (ctx) => {
+bot.hears(/^nominate$/i, (ctx) => {
     if (!ctx.message.reply_to_message) {
         ctx.replyWithMarkdown(`Please reply to the message you want to nominate`);
     } else {
