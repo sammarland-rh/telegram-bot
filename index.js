@@ -1,18 +1,13 @@
 const Telegraf = require('telegraf');
-const Extra = require('telegraf/extra');
 const session = require('telegraf/session');
-const fs = require('fs');
-const readline = require('readline');
-const google = require('googleapis');
-const reply = Telegraf;
+const GoogleSpreadsheet = require('google-spreadsheet');
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
-var creds = JSON.parse(process.env.creds);
-var GoogleSpreadsheet = require('google-spreadsheet');
-var async = require('async');
-var sheetID = process.env.SHEET_ID;
+const creds = JSON.parse(process.env.creds);
+const sheetID = process.env.SHEET_ID;
 
+// Google piece based on this tutorial from Twillio - https://www.twilio.com/blog/2017/03/google-spreadsheets-and-javascriptnode-js.html
 // Create a document object using the ID of the spreadsheet - obtained from its URL.
-var doc = new GoogleSpreadsheet(sheetID);
+const doc = new GoogleSpreadsheet(sheetID);
 
 // Authenticate with the Google Spreadsheets API.
 function addToSpreadSheet(data) {
@@ -45,7 +40,7 @@ bot.hears('nominate', (ctx) => {
         data = {
             nominee: ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name,
             message: ctx.message.reply_to_message.text,
-            nominator:  ctx.message.from.first_name + " " + ctx.message.from.last_name,
+            nominator: ctx.message.from.first_name + " " + ctx.message.from.last_name,
             date: new Date().toString(),
             channel: ctx.message.chat.title
         };
