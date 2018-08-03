@@ -39,8 +39,6 @@ bot.use((ctx, next) => {
 
 // Text messages handling
 bot.hears('nominate', (ctx) => {
-    console.log(JSON.stringify(ctx.message.reply_to_message));
-    console.log(!ctx.message.reply_to_message);
     if (!ctx.message.reply_to_message) {
         ctx.replyWithMarkdown(`Please reply to the message you want to nominate`);
     } else {
@@ -52,7 +50,7 @@ bot.hears('nominate', (ctx) => {
             channel: ctx.message.chat.title
         };
         addToSpreadSheet(data);
-        ctx.replyWithMarkdown(`Thanks for your nomination. Its safely stored in a database that Karl can't get to`);
+        ctx.replyWithMarkdown(`Thanks for your nomination. It's safely stored in a database that Karl can't get to`);
         console.log("Message the was nominated was " + ctx.message.reply_to_message.text + "\nNominated By " + ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name);
     }
 
