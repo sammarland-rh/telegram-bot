@@ -39,6 +39,8 @@ bot.use((ctx, next) => {
 
 // Text messages handling
 bot.hears('nominate', (ctx) => {
+    console.log(JSON.stringify(ctx.message.reply_to_message));
+    console.log(!ctx.message.reply_to_message);
     if (!ctx.message.reply_to_message) {
         ctx.replyWithMarkdown(`Please reply to the message you want to nominate`);
     } else {
