@@ -39,8 +39,10 @@ Send a message to BotFather:
 * Then reply with your bot name including the @ for example `@naminatebot`
 * Then reply with `Disable`
 
-
 ## Configuration
 The code expects the `SHEET_ID`, `TELEGRAM_TOKEN` and `creds` to be supplied as environment variables.
+
+## Running the app
+There are many ways to run Node apps. The simples is to run `node index.js' You will need to make sure the environment variables are correctly set for the application to start.
 
 
