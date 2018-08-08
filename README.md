@@ -10,6 +10,9 @@ Person A - "I am so funny"
 Person B replied to the comment - "Nominate"
 Bot will store "I am so funny" along with the channel name, nominee, nominator and the date.
 
+## Installing Dependancies
+
+This is a node app so running `npm install` from the project directory will install the dependancies required to run the app.
 
 ## Setup Google integration
 
