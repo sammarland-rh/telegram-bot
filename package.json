@@ -11,9 +11,13 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.6.1",
+    "dropbox": "^4.0.9",
     "fs": "0.0.1-security",
     "google-spreadsheet": "^2.0.3",
     "googleapis": "^27.0.0",
+    "http": "0.0.0",
+    "https": "^1.0.0",
+    "isomorphic-fetch": "^2.2.1",
     "telegraf": "^3.22.1"
   }
 }
