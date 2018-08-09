@@ -11,7 +11,7 @@ const fs = require('fs');
 const telegramToken = process.env.TELEGRAM_TOKEN;
 const bot = new Telegraf(telegramToken);
 const dropboxToken = process.env.DROPBOX_TOKEN;
-const creds = require('./creds.json');
+const creds = JSON.parse(process.env.creds);
 const sheetID = process.env.SHEET_ID;
 const dropboxURL = "https://www.dropbox.com/home";
 
