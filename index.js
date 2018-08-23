@@ -93,7 +93,7 @@ bot.hears(/^nominate$/i, (ctx) => {
             });
         } else if (ctx.message.reply_to_message.photo) {
             // This is where the photo logic happens
-            fileId = ctx.message.reply_to_message.photo[4].file_id;
+            fileId = ctx.message.reply_to_message.photo[2].file_id;
             ctx.telegram.getFile(fileId).then(function (response) {
                 extenstion = response.file_path.split(".")[1];
                 fileName = response.file_id + "." + extenstion;
