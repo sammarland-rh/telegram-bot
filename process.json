@@ -1,0 +1,21 @@
+{
+    "apps": [{
+        "name": "telegrambot",
+        "script": "./index.js",
+        "watch": true,
+        "env": {
+            "NODE_ENV": "development",
+            "creds": "",
+            "TELEGRAM_TOKEN": "",
+            "SHEET_ID": "",
+            "DROPBOX_TOKEN": ""
+        },
+        "env_production": {
+            "NODE_ENV": "production",
+            "creds": "",
+            "TELEGRAM_TOKEN": "",
+            "SHEET_ID": "",
+            "DROPBOX_TOKEN": ""
+        }
+    }]
+}
