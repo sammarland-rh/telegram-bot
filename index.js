@@ -12,7 +12,7 @@ const telegramToken = process.env.TELEGRAM_TOKEN;
 const bot = new Telegraf(telegramToken);
 const dropboxToken = process.env.DROPBOX_TOKEN;
 const writePath = process.env.WRITE_PATH;
-const creds =process.env.creds;
+const creds = require('./creds.json');
 const sheetID = process.env.SHEET_ID;
 const dropboxURL = "https://www.dropbox.com/home";
 
@@ -99,7 +99,7 @@ bot.hears(/^nominate$/i, (ctx) => {
             });
         } else if (ctx.message.reply_to_message.photo) {
             // This is where the photo logic happens
-            fileId = ctx.message.reply_to_message.photo[1].file_id;
+            fileId = ctx.message.reply_to_message.photo[2].file_id;
             ctx.telegram.getFile(fileId).then(function (response) {
                 extenstion = response.file_path.split(".")[1];
                 fileName = response.file_id + "." + extenstion;
