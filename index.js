@@ -11,7 +11,8 @@ const fs = require('fs');
 const telegramToken = process.env.TELEGRAM_TOKEN;
 const bot = new Telegraf(telegramToken);
 const dropboxToken = process.env.DROPBOX_TOKEN;
-const creds = JSON.parse(process.env.creds);
+const writePath = process.env.WRITE_PATH;
+const creds = require('./creds.json');
 const sheetID = process.env.SHEET_ID;
 const dropboxURL = "https://www.dropbox.com/home";
 
@@ -67,7 +68,7 @@ bot.hears(/^nominate$/i, (ctx) => {
         if (ctx.message.reply_to_message.animation) {
             fileId = ctx.message.reply_to_message.animation.file_id;
             ctx.telegram.getFile(fileId).then(function (response) {
-                fileName = fileId + ".mp4";
+                fileName = writePath + fileId + ".mp4";
                 var file = fs.createWriteStream(fileName);
                 var request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, function (response) {
                     response.pipe(file).on("finish", function () {
@@ -93,10 +94,10 @@ bot.hears(/^nominate$/i, (ctx) => {
             });
         } else if (ctx.message.reply_to_message.photo) {
             // This is where the photo logic happens
-            fileId = ctx.message.reply_to_message.photo[2].file_id;
+            fileId = ctx.message.reply_to_message.photo[1].file_id;
             ctx.telegram.getFile(fileId).then(function (response) {
                 extenstion = response.file_path.split(".")[1];
-                fileName = response.file_id + "." + extenstion;
+                fileName = writePath + response.file_id + "." + extenstion;
                 var file = fs.createWriteStream(fileName);
                 var request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, function (response) {
                     response.pipe(file).on("finish", function () {
