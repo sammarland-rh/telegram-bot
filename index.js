@@ -30,6 +30,9 @@ var dbx = new Dropbox({
 // Authenticate with the Google Spreadsheets API.
 function addToSpreadSheet(data) {
     doc.useServiceAccountAuth(creds, function (err) {
+        if(err){
+            console.log(err);
+        }
         doc.addRow(1, data, function (err) {
             if (err) {
                 console.log(err);
@@ -81,6 +84,7 @@ bot.hears(/^nominate$/i, (ctx) => {
                             })
                             .then(function (response) {
                                 data.linkToGif = dropboxURL + response.path_lower;
+                                data.message = "N/A";
                                 addToSpreadSheet(data);
                                 ctx.replyWithMarkdown(`Thanks for your nomination. It's safely stored in a database that Karl can't get to`);
                                 console.log("Message the was nominated was " + ctx.message.reply_to_message.text + "\nNominated By " + ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name);
@@ -111,6 +115,7 @@ bot.hears(/^nominate$/i, (ctx) => {
                             })
                             .then(function (response) {
                                 data.linkToPhoto = dropboxURL + response.path_lower;
+                                data.message = "N/A";
                                 addToSpreadSheet(data);
                                 ctx.replyWithMarkdown(`Thanks for your nomination. It's safely stored in a database that Karl can't get to`);
                                 console.log("Message the was nominated was " + ctx.message.reply_to_message.text + "\nNominated By " + ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name);
