@@ -68,11 +68,12 @@ bot.hears(/^nominate$/i, (ctx) => {
         if (ctx.message.reply_to_message.animation) {
             fileId = ctx.message.reply_to_message.animation.file_id;
             ctx.telegram.getFile(fileId).then(function (response) {
-                fileName = writePath + fileId + ".mp4";
-                var file = fs.createWriteStream(fileName);
+                fileName = fileId + ".mp4";
+                filePath = writePath + fileName;
+                var file = fs.createWriteStream(filePath);
                 var request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, function (response) {
                     response.pipe(file).on("finish", function () {
-                        uploadFile = fs.readFileSync(fileName);
+                        uploadFile = fs.readFileSync(filePath);
                         dbx.filesUpload({
                                 path: gifPath + "/" + fileName,
                                 contents: uploadFile,
@@ -87,7 +88,7 @@ bot.hears(/^nominate$/i, (ctx) => {
                             .catch(function (error) {
                                 console.error(error);
                             });
-                        fs.unlinkSync(fileName);
+                        fs.unlinkSync(filePath);
                     });
                 });
 
@@ -97,11 +98,12 @@ bot.hears(/^nominate$/i, (ctx) => {
             fileId = ctx.message.reply_to_message.photo[1].file_id;
             ctx.telegram.getFile(fileId).then(function (response) {
                 extenstion = response.file_path.split(".")[1];
-                fileName = writePath + response.file_id + "." + extenstion;
-                var file = fs.createWriteStream(fileName);
+                fileName = response.file_id + "." + extenstion;
+                filePath = writePath + fileName;
+                var file = fs.createWriteStream(filePath);
                 var request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, function (response) {
                     response.pipe(file).on("finish", function () {
-                        uploadFile = fs.readFileSync(fileName);
+                        uploadFile = fs.readFileSync(filePath);
                         dbx.filesUpload({
                                 path: photosPath + "/" + fileName,
                                 contents: uploadFile,
@@ -116,7 +118,7 @@ bot.hears(/^nominate$/i, (ctx) => {
                             .catch(function (error) {
                                 console.error(error);
                             });
-                        fs.unlinkSync(fileName);
+                        fs.unlinkSync(filePath);
                     });
                 });
             });
