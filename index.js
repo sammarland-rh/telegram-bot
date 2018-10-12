@@ -53,11 +53,21 @@ bot.use((ctx, next) => {
     });
 });
 
+// Keep track of nominated IDs to avoid duplicates
+// Only works for this bot instance (lost on restart), but it should help catch simple race conditions and duplicate hears() invocations
+const nominatedIds = [];
+
 // Text messages handling
 bot.hears(/^nominate$/i, (ctx) => {
     if (!ctx.message.reply_to_message) {
-        ctx.replyWithMarkdown(`Please reply to the message you want to nominate`);
+        ctx.telegram.sendMessage(ctx.message.chat.id, `Please reply to the message you want to nominate`, {
+            reply_to_message_id: ctx.message.message_id
+        });
+        return;
+    } else if (nominatedIds.includes(ctx.message.reply_to_message.message_id)) {
+        return;
     } else {
+        nominatedIds.push(ctx.message.reply_to_message.message_id);
         data = {
             nominee: ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name,
             message: ctx.message.reply_to_message.text,
@@ -129,7 +139,12 @@ bot.hears(/^nominate$/i, (ctx) => {
             });
         } else {
             addToSpreadSheet(data);
-            ctx.replyWithMarkdown(`Thanks for your nomination. It's safely stored in a database that Karl can't get to`);
+            // Use ctx.telegram.sendMessage because ctx.replyX don't seem to properly reply
+            // Reply to the nominated message
+            // This might help in cases where the bot runs into problems - trace what the bot is replying to
+            ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
+              reply_to_message_id: ctx.message.reply_to_message.message_id
+            });
             console.log("Message the was nominated was " + ctx.message.reply_to_message.text + "\nNominated By " + ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name);
         }
     }
