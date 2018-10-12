@@ -53,13 +53,21 @@ bot.use((ctx, next) => {
     });
 });
 
+// Keep track of nominated IDs to avoid duplicates
+// Only works for this bot instance (lost on restart), but it should help catch simple race conditions and duplicate hears() invocations
+const nominatedIds = [];
+
 // Text messages handling
 bot.hears(/^nominate$/i, (ctx) => {
-    if (!ctx.message.reply_to_message) {
+    if (nominatedIds.includes(ctx.message.message_id)) {
+        return;
+    } else if (!ctx.message.reply_to_message) {
         ctx.telegram.sendMessage(ctx.message.chat.id, `Please reply to the message you want to nominate`, {
-          reply_to_message_id: ctx.message.message_id
+            reply_to_message_id: ctx.message.message_id
         });
+        return;
     } else {
+        nominatedIds.push(ctx.message.message_id);
         data = {
             nominee: ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name,
             message: ctx.message.reply_to_message.text,
