@@ -51,7 +51,7 @@ const nominatedIds = [];
 
 // Error handling
 bot.catch((err) => {
-  error('Ooops', err)
+  error('Something went horribly wrong.  Swallow the error.', err);
 });
 
 // Text messages handling
