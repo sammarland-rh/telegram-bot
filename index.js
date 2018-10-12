@@ -129,7 +129,12 @@ bot.hears(/^nominate$/i, (ctx) => {
             });
         } else {
             addToSpreadSheet(data);
-            ctx.replyWithMarkdown(`Thanks for your nomination. It's safely stored in a database that Karl can't get to`);
+            // Use ctx.telegram.sendMessage because ctx.replyX don't seem to properly reply
+            // Reply to the nominated message
+            // This might help in cases where the bot runs into problems - trace what the bot is replying to
+            ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
+              reply_to_message_id: ctx.message.reply_to_message.message_id
+            });
             console.log("Message the was nominated was " + ctx.message.reply_to_message.text + "\nNominated By " + ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name);
         }
     }
