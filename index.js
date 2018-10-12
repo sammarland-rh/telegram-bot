@@ -61,9 +61,6 @@ bot.hears(/^nominate$/i, (ctx) => {
         debug(`message ${ctx.message.reply_to_message.message_id} already seen - ignoring`);
         return;
     } else {
-        // Don't re-process stuff we've seen already
-        // TODO: add this *after* we've successfully processed it?
-        nominatedIds.push(ctx.message.reply_to_message.message_id);
         const data = {
             nominee: ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name,
             message: ctx.message.reply_to_message.text,
@@ -150,6 +147,8 @@ const saveNomination = function(ctx, data) {
             reply_to_message_id: ctx.message.reply_to_message.message_id
         }).then(() => {
             debug(`${data.nominator} nominated message '${data.message}'`);
+            // Don't re-process stuff we've seen already
+            nominatedIds.push(ctx.message.reply_to_message.message_id);
         }).catch(err => {
             error(err);
             return Promise.reject(err);
