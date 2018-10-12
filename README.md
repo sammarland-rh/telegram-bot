@@ -53,4 +53,4 @@ You will need to make sure the environment variables are correctly set (as above
 npm run dev
 ```
 ### Production
-The simplest way to run this is via `node index.js`.
+The simplest way to run this is via `DEBUG=telegram-bot:error node index.js`.
