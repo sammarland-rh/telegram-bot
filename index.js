@@ -1,3 +1,6 @@
+// dotenv parsing
+require('dotenv').config();
+
 // packages
 const Telegraf = require('telegraf');
 const fetch = require('isomorphic-fetch');
