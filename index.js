@@ -9,7 +9,8 @@ const GoogleSpreadsheet = require('google-spreadsheet');
 const Dropbox = require('dropbox').Dropbox;
 const https = require('https');
 const fs = require('fs');
-const debug = require('debug')('telegram-bot:log');
+const debug = require('debug')('telegram-bot:debug');
+const trace = require('debug')('telegram-bot:trace');
 const error = require('debug')('telegram-bot:error');
 
 // Credentials and other runtime config
@@ -40,13 +41,18 @@ bot.use((ctx, next) => {
     const start = new Date();
     return next().then(() => {
         const ms = new Date() - start;
-        console.log('response time %sms', ms);
+        trace('response time %sms', ms);
     });
 });
 
 // Keep track of nominated IDs to avoid duplicates
 // Only works for this bot instance (lost on restart), but it should help catch simple race conditions and duplicate hears() invocations
 const nominatedIds = [];
+
+// Error handling
+bot.catch((err) => {
+  error('Ooops', err)
+});
 
 // Text messages handling
 bot.hears(/^nominate$/i, (ctx) => {
@@ -79,7 +85,15 @@ bot.hears(/^nominate$/i, (ctx) => {
                 return saveNomination(ctx, data);
             });
         } else if (ctx.message.reply_to_message.photo) {
-            const fileId = ctx.message.reply_to_message.photo[2].file_id;
+            // Find the photo we want
+            const photo = ctx.message.reply_to_message.photo.reduce((acc, currVal) => {
+                return !acc ? currVal : (acc.width > currVal.width ? acc : currVal);
+            }, null);
+            if (!photo)  {
+              error(`screwy photo in message ${ctx.message.reply_to_message.message_id}`);
+              return;
+            }
+            const fileId = photo.file_id;
             return downloadFileFromTelegram(ctx, fileId).then(uploadFileToDropbox.bind(null, photosPath)).then(response => {
                 data.linkToPhoto = dropboxURL + response.path_lower;
                 data.message = "N/A";
@@ -134,7 +148,11 @@ const uploadFileToDropbox = function(destinationPath, filePath) {
             return Promise.reject(err);
         })
         .finally(() => {
-            fs.unlinkSync(filePath);
+            try {
+                fs.unlinkSync(filePath);
+            } catch (e) {
+                // Meh
+            }
         });
 };
 
@@ -146,10 +164,14 @@ const saveNomination = function(ctx, data) {
         return ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
             reply_to_message_id: ctx.message.reply_to_message.message_id
         }).then(() => {
-            debug(`${data.nominator} nominated message '${data.message}'`);
+            debug(`${data.nominator} nominated message '${data.message} with ID ${ctx.message.message_id}'`);
             // Don't re-process stuff we've seen already
             nominatedIds.push(ctx.message.reply_to_message.message_id);
         }).catch(err => {
+            if (err.description === "Forbidden: bot was kicked from the group chat") {
+              // Meh - we saved it, we don't HAVE to tell anyone about it
+              return Promise.resolve();
+            }
             error(err);
             return Promise.reject(err);
         });
