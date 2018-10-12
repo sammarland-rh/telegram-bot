@@ -74,16 +74,16 @@ bot.hears(/^nominate$/i, (ctx) => {
         if (ctx.message.reply_to_message.animation) {
             const fileId = ctx.message.reply_to_message.animation.file_id;
             return downloadFileFromTelegram(ctx, fileId, 'mp4').then(uploadFileToDropbox.bind(null, gifPath)).then(response => {
-              data.linkToGif = dropboxURL + response.path_lower;
-              data.message = "N/A";
-              return saveNomination(ctx, data);
+                data.linkToGif = dropboxURL + response.path_lower;
+                data.message = "N/A";
+                return saveNomination(ctx, data);
             });
         } else if (ctx.message.reply_to_message.photo) {
             const fileId = ctx.message.reply_to_message.photo[2].file_id;
             return downloadFileFromTelegram(ctx, fileId).then(uploadFileToDropbox.bind(null, photosPath)).then(response => {
-              data.linkToPhoto = dropboxURL + response.path_lower;
-              data.message = "N/A";
-              return saveNomination(ctx, data);
+                data.linkToPhoto = dropboxURL + response.path_lower;
+                data.message = "N/A";
+                return saveNomination(ctx, data);
             });
         } else {
             return saveNomination(ctx, data);
