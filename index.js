@@ -31,20 +31,6 @@ var dbx = new Dropbox({
     accessToken: dropboxToken
 });
 
-// Authenticate with the Google Spreadsheets API.
-function addToSpreadSheet(data) {
-    doc.useServiceAccountAuth(creds, function (err) {
-        if(err){
-            console.log(err);
-        }
-        doc.addRow(1, data, function (err) {
-            if (err) {
-                console.log(err);
-            }
-        });
-    });
-}
-
 // // Register session middleware
 bot.use(session());
 
@@ -100,11 +86,7 @@ bot.hears(/^nominate$/i, (ctx) => {
                             .then(function (response) {
                                 data.linkToGif = dropboxURL + response.path_lower;
                                 data.message = "N/A";
-                                addToSpreadSheet(data);
-                                ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
-                                  reply_to_message_id: ctx.message.reply_to_message.message_id
-                                });
-                                console.log("Message the was nominated was " + ctx.message.reply_to_message.text + "\nNominated By " + ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name);
+                                return saveNomination(ctx, data);
                             })
                             .catch(function (error) {
                                 console.error(error);
@@ -134,11 +116,7 @@ bot.hears(/^nominate$/i, (ctx) => {
                             .then(function (response) {
                                 data.linkToPhoto = dropboxURL + response.path_lower;
                                 data.message = "N/A";
-                                addToSpreadSheet(data);
-                                ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
-                                  reply_to_message_id: ctx.message.reply_to_message.message_id
-                                });
-                                console.log("Message the was nominated was " + ctx.message.reply_to_message.text + "\nNominated By " + ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name);
+                                return saveNomination(ctx, data);
                             })
                             .catch(function (error) {
                                 console.error(error);
@@ -150,17 +128,43 @@ bot.hears(/^nominate$/i, (ctx) => {
                 });
             });
         } else {
-            addToSpreadSheet(data);
-            // Use ctx.telegram.sendMessage because ctx.replyX don't seem to properly reply
-            // Reply to the nominated message
-            // This might help in cases where the bot runs into problems - trace what the bot is replying to
-            ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
-              reply_to_message_id: ctx.message.reply_to_message.message_id
-            });
-            console.log("Message the was nominated was " + ctx.message.reply_to_message.text + "\nNominated By " + ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name);
+            return saveNomination(ctx, data);
         }
     }
 
 });
 
 bot.startPolling();
+
+const saveNomination = function(ctx, data) {
+  return updateSpreadsheet(data).then(() => {
+    // Use ctx.telegram.sendMessage because ctx.replyX don't seem to properly reply
+    // Reply to the nominated message
+    // This might help in cases where the bot runs into problems - trace what the bot is replying to
+    // TODO Should we bother checking if sending the message worked?
+    ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
+      reply_to_message_id: ctx.message.reply_to_message.message_id
+    });
+    debug(`${data.nominator} nominated message '${data.message}'`);
+  });
+};
+
+const updateSpreadsheet = function(data) {
+  return new Promise((resolve, reject) => {
+    // Authenticate with the Google Spreadsheets API.
+    doc.useServiceAccountAuth(creds, function (err) {
+        if(err){
+            console.error(err);
+            reject(err);
+        }
+        // Add a row
+        doc.addRow(1, data, function (err) {
+            if (err) {
+                console.error(err);
+                reject(err);
+            }
+            resolve();
+        });
+    });
+  });
+};
