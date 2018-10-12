@@ -44,5 +44,7 @@ The code expects some environment variables to be provided, and will respect [do
 
 See `.env.template` for details.
 
+Additionally, the code expects your Google credentials (for accessing the sheet) in the file `creds.json`.  See https://www.npmjs.com/package/google-spreadsheet#service-account-recommended-method for instructions to retrieve the JSON that should be in this file.
+
 ## Running the app
 There are many ways to run Node apps. The simples is to run `node index.js' You will need to make sure the environment variables are correctly set for the application to start.
