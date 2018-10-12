@@ -161,15 +161,15 @@ const updateSpreadsheet = function(data) {
         doc.useServiceAccountAuth(creds, function(err) {
             if (err) {
                 error(err);
-                reject(err);
+                return reject(err);
             }
             // Add a row
             doc.addRow(1, data, function(err) {
                 if (err) {
                     error(err);
-                    reject(err);
+                    return reject(err);
                 }
-                resolve();
+                return resolve();
             });
         });
     });
