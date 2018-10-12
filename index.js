@@ -9,6 +9,7 @@ const GoogleSpreadsheet = require('google-spreadsheet');
 const Dropbox = require('dropbox').Dropbox;
 const https = require('https');
 const fs = require('fs');
+const debug = require('debug')('telegram-bot');
 
 // Credentials and other runtime config
 const telegramToken = process.env.TELEGRAM_TOKEN;
@@ -68,6 +69,7 @@ bot.hears(/^nominate$/i, (ctx) => {
         });
         return;
     } else if (nominatedIds.includes(ctx.message.reply_to_message.message_id)) {
+        debug(`message ${ctx.message.reply_to_message.message_id} already seen - ignoring`);
         return;
     } else {
         nominatedIds.push(ctx.message.reply_to_message.message_id);
