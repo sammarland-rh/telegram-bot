@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "dev": "DEBUG=telegram-bot nodemon index.js"
+    "dev": "DEBUG=telegram-bot:* nodemon index.js"
   },
   "author": "",
   "license": "ISC",

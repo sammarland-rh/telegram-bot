@@ -9,7 +9,8 @@ const GoogleSpreadsheet = require('google-spreadsheet');
 const Dropbox = require('dropbox').Dropbox;
 const https = require('https');
 const fs = require('fs');
-const debug = require('debug')('telegram-bot');
+const debug = require('debug')('telegram-bot:log');
+const error = require('debug')('telegram-bot:error');
 
 // Credentials and other runtime config
 const telegramToken = process.env.TELEGRAM_TOKEN;
@@ -50,10 +51,12 @@ const nominatedIds = [];
 // Text messages handling
 bot.hears(/^nominate$/i, (ctx) => {
     if (!ctx.message.reply_to_message) {
-        ctx.telegram.sendMessage(ctx.message.chat.id, `Please reply to the message you want to nominate`, {
+        return ctx.telegram.sendMessage(ctx.message.chat.id, `Please reply to the message you want to nominate`, {
             reply_to_message_id: ctx.message.message_id
+        }).catch(err => {
+            error(err);
+            return Promise.reject(err);
         });
-        return;
     } else if (nominatedIds.includes(ctx.message.reply_to_message.message_id)) {
         debug(`message ${ctx.message.reply_to_message.message_id} already seen - ignoring`);
         return;
@@ -141,11 +144,14 @@ const saveNomination = function(ctx, data) {
         // Use ctx.telegram.sendMessage because ctx.replyX don't seem to properly reply
         // Reply to the nominated message
         // This might help in cases where the bot runs into problems - trace what the bot is replying to
-        // TODO Should we bother checking if sending the message worked?
-        ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
+        return ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
             reply_to_message_id: ctx.message.reply_to_message.message_id
+        }).then(() => {
+            debug(`${data.nominator} nominated message '${data.message}'`);
+        }).catch(err => {
+            error(err);
+            return Promise.reject(err);
         });
-        debug(`${data.nominator} nominated message '${data.message}'`);
     });
 };
 
@@ -154,13 +160,13 @@ const updateSpreadsheet = function(data) {
         // Authenticate with the Google Spreadsheets API.
         doc.useServiceAccountAuth(creds, function(err) {
             if (err) {
-                console.error(err);
+                error(err);
                 reject(err);
             }
             // Add a row
             doc.addRow(1, data, function(err) {
                 if (err) {
-                    console.error(err);
+                    error(err);
                     reject(err);
                 }
                 resolve();
