@@ -51,7 +51,7 @@ const nominatedIds = [];
 // Text messages handling
 bot.hears(/^nominate$/i, (ctx) => {
     if (!ctx.message.reply_to_message) {
-        return ctx.telegram.sendMessage(ctx.message.chat.id, `Please reply to the message you want to nominate`, {
+        return ctx.telegram.sendMessage(ctx.message.chat.id, `Please reply to the message you want to nominate.`, {
             reply_to_message_id: ctx.message.message_id
         }).catch(err => {
             error(err);
