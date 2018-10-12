@@ -56,7 +56,9 @@ bot.use((ctx, next) => {
 // Text messages handling
 bot.hears(/^nominate$/i, (ctx) => {
     if (!ctx.message.reply_to_message) {
-        ctx.replyWithMarkdown(`Please reply to the message you want to nominate`);
+        ctx.telegram.sendMessage(ctx.message.chat.id, `Please reply to the message you want to nominate`, {
+          reply_to_message_id: ctx.message.message_id
+        });
     } else {
         data = {
             nominee: ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name,
