@@ -40,9 +40,9 @@ Send a message to BotFather:
 * Then reply with `Disable`
 
 ## Configuration
-The code expects the `SHEET_ID`, `TELEGRAM_TOKEN` and `creds` to be supplied as environment variables.
+The code expects some environment variables to be provided, and will respect [dotenv](https://www.npmjs.com/package/dotenv) usage.
+
+See `.env.template` for details.
 
 ## Running the app
 There are many ways to run Node apps. The simples is to run `node index.js' You will need to make sure the environment variables are correctly set for the application to start.
-
-
