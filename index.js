@@ -106,8 +106,9 @@ bot.hears(/^nominate$/i, (ctx) => {
                             })
                             .catch(function (error) {
                                 console.error(error);
+                            }).finally(() => {
+                                fs.unlinkSync(filePath);
                             });
-                        fs.unlinkSync(filePath);
                     });
                 });
 
@@ -137,8 +138,10 @@ bot.hears(/^nominate$/i, (ctx) => {
                             })
                             .catch(function (error) {
                                 console.error(error);
+                            })
+                            .finally(() => {
+                                fs.unlinkSync(filePath);
                             });
-                        fs.unlinkSync(filePath);
                     });
                 });
             });
