@@ -61,8 +61,7 @@ bot.hears(/^nominate$/i, (ctx) => {
         debug(`message ${ctx.message.reply_to_message.message_id} already seen - ignoring`);
         return;
     } else {
-        nominatedIds.push(ctx.message.reply_to_message.message_id);
-        data = {
+        const data = {
             nominee: ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name,
             message: ctx.message.reply_to_message.text,
             nominator: ctx.message.from.first_name + " " + ctx.message.from.last_name,
@@ -73,62 +72,18 @@ bot.hears(/^nominate$/i, (ctx) => {
         };
         // This gets the information about the gifs
         if (ctx.message.reply_to_message.animation) {
-            fileId = ctx.message.reply_to_message.animation.file_id;
-            ctx.telegram.getFile(fileId).then(function(response) {
-                fileName = fileId + ".mp4";
-                filePath = writePath + fileName;
-                var file = fs.createWriteStream(filePath);
-                var request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, function(response) {
-                    response.pipe(file).on("finish", function() {
-                        uploadFile = fs.readFileSync(filePath);
-                        dbx.filesUpload({
-                                path: gifPath + "/" + fileName,
-                                contents: uploadFile,
-                                autorename: true
-                            })
-                            .then(function(response) {
-                                data.linkToGif = dropboxURL + response.path_lower;
-                                data.message = "N/A";
-                                return saveNomination(ctx, data);
-                            })
-                            .catch(function(error) {
-                                console.error(error);
-                            }).finally(() => {
-                                fs.unlinkSync(filePath);
-                            });
-                    });
-                });
-
+            const fileId = ctx.message.reply_to_message.animation.file_id;
+            return downloadFileFromTelegram(ctx, fileId, 'mp4').then(uploadFileToDropbox.bind(null, gifPath)).then(response => {
+              data.linkToGif = dropboxURL + response.path_lower;
+              data.message = "N/A";
+              return saveNomination(ctx, data);
             });
         } else if (ctx.message.reply_to_message.photo) {
-            // This is where the photo logic happens
-            fileId = ctx.message.reply_to_message.photo[2].file_id;
-            ctx.telegram.getFile(fileId).then(function(response) {
-                extenstion = response.file_path.split(".")[1];
-                fileName = response.file_id + "." + extenstion;
-                filePath = writePath + fileName;
-                var file = fs.createWriteStream(filePath);
-                var request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, function(response) {
-                    response.pipe(file).on("finish", function() {
-                        uploadFile = fs.readFileSync(filePath);
-                        dbx.filesUpload({
-                                path: photosPath + "/" + fileName,
-                                contents: uploadFile,
-                                autorename: true
-                            })
-                            .then(function(response) {
-                                data.linkToPhoto = dropboxURL + response.path_lower;
-                                data.message = "N/A";
-                                return saveNomination(ctx, data);
-                            })
-                            .catch(function(error) {
-                                console.error(error);
-                            })
-                            .finally(() => {
-                                fs.unlinkSync(filePath);
-                            });
-                    });
-                });
+            const fileId = ctx.message.reply_to_message.photo[2].file_id;
+            return downloadFileFromTelegram(ctx, fileId).then(uploadFileToDropbox.bind(null, photosPath)).then(response => {
+              data.linkToPhoto = dropboxURL + response.path_lower;
+              data.message = "N/A";
+              return saveNomination(ctx, data);
             });
         } else {
             return saveNomination(ctx, data);
@@ -138,6 +93,50 @@ bot.hears(/^nominate$/i, (ctx) => {
 });
 
 bot.startPolling();
+
+const downloadFileFromTelegram = function(ctx, fileId, defaultExtension) {
+    // Get file *information* from Telegram
+    return ctx.telegram.getFile(fileId).then(response => {
+        const extension = defaultExtension || response.file_path.split(".")[1];
+        return new Promise((resolve, reject) => {
+            const filePath = `${writePath}/${fileId}.${extension}`;
+            const file = fs.createWriteStream(filePath);
+            // Now *download* it somewhere temporary
+            const request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, response => {
+                response.pipe(file).on("finish", () => {
+                    return resolve(filePath);
+                }).on("error", err => {
+                    return reject(err);
+                });
+            });
+        });
+    }).catch(err => {
+        error(err);
+        return Promise.reject(err);
+    });
+};
+
+const uploadFileToDropbox = function(destinationPath, filePath) {
+    // Get the fileName
+    const fileName = filePath.match(/^.+\/([^/]+?)$/)[1];
+    // Load the file into memory
+    const file = fs.readFileSync(filePath);
+    if (!file) {
+        return Promise.reject('could not read temporary file');
+    }
+    return dbx.filesUpload({
+            path: `${destinationPath}/${fileName}`,
+            contents: file,
+            autorename: true
+        })
+        .catch(function(err) {
+            error(err);
+            return Promise.reject(err);
+        })
+        .finally(() => {
+            fs.unlinkSync(filePath);
+        });
+};
 
 const saveNomination = function(ctx, data) {
     return updateSpreadsheet(data).then(() => {
