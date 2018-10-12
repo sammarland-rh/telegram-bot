@@ -71,24 +71,24 @@ bot.hears(/^nominate$/i, (ctx) => {
         // This gets the information about the gifs
         if (ctx.message.reply_to_message.animation) {
             fileId = ctx.message.reply_to_message.animation.file_id;
-            ctx.telegram.getFile(fileId).then(function (response) {
+            ctx.telegram.getFile(fileId).then(function(response) {
                 fileName = fileId + ".mp4";
                 filePath = writePath + fileName;
                 var file = fs.createWriteStream(filePath);
-                var request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, function (response) {
-                    response.pipe(file).on("finish", function () {
+                var request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, function(response) {
+                    response.pipe(file).on("finish", function() {
                         uploadFile = fs.readFileSync(filePath);
                         dbx.filesUpload({
                                 path: gifPath + "/" + fileName,
                                 contents: uploadFile,
                                 autorename: true
                             })
-                            .then(function (response) {
+                            .then(function(response) {
                                 data.linkToGif = dropboxURL + response.path_lower;
                                 data.message = "N/A";
                                 return saveNomination(ctx, data);
                             })
-                            .catch(function (error) {
+                            .catch(function(error) {
                                 console.error(error);
                             }).finally(() => {
                                 fs.unlinkSync(filePath);
@@ -100,25 +100,25 @@ bot.hears(/^nominate$/i, (ctx) => {
         } else if (ctx.message.reply_to_message.photo) {
             // This is where the photo logic happens
             fileId = ctx.message.reply_to_message.photo[2].file_id;
-            ctx.telegram.getFile(fileId).then(function (response) {
+            ctx.telegram.getFile(fileId).then(function(response) {
                 extenstion = response.file_path.split(".")[1];
                 fileName = response.file_id + "." + extenstion;
                 filePath = writePath + fileName;
                 var file = fs.createWriteStream(filePath);
-                var request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, function (response) {
-                    response.pipe(file).on("finish", function () {
+                var request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, function(response) {
+                    response.pipe(file).on("finish", function() {
                         uploadFile = fs.readFileSync(filePath);
                         dbx.filesUpload({
                                 path: photosPath + "/" + fileName,
                                 contents: uploadFile,
                                 autorename: true
                             })
-                            .then(function (response) {
+                            .then(function(response) {
                                 data.linkToPhoto = dropboxURL + response.path_lower;
                                 data.message = "N/A";
                                 return saveNomination(ctx, data);
                             })
-                            .catch(function (error) {
+                            .catch(function(error) {
                                 console.error(error);
                             })
                             .finally(() => {
@@ -137,34 +137,34 @@ bot.hears(/^nominate$/i, (ctx) => {
 bot.startPolling();
 
 const saveNomination = function(ctx, data) {
-  return updateSpreadsheet(data).then(() => {
-    // Use ctx.telegram.sendMessage because ctx.replyX don't seem to properly reply
-    // Reply to the nominated message
-    // This might help in cases where the bot runs into problems - trace what the bot is replying to
-    // TODO Should we bother checking if sending the message worked?
-    ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
-      reply_to_message_id: ctx.message.reply_to_message.message_id
+    return updateSpreadsheet(data).then(() => {
+        // Use ctx.telegram.sendMessage because ctx.replyX don't seem to properly reply
+        // Reply to the nominated message
+        // This might help in cases where the bot runs into problems - trace what the bot is replying to
+        // TODO Should we bother checking if sending the message worked?
+        ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
+            reply_to_message_id: ctx.message.reply_to_message.message_id
+        });
+        debug(`${data.nominator} nominated message '${data.message}'`);
     });
-    debug(`${data.nominator} nominated message '${data.message}'`);
-  });
 };
 
 const updateSpreadsheet = function(data) {
-  return new Promise((resolve, reject) => {
-    // Authenticate with the Google Spreadsheets API.
-    doc.useServiceAccountAuth(creds, function (err) {
-        if(err){
-            console.error(err);
-            reject(err);
-        }
-        // Add a row
-        doc.addRow(1, data, function (err) {
+    return new Promise((resolve, reject) => {
+        // Authenticate with the Google Spreadsheets API.
+        doc.useServiceAccountAuth(creds, function(err) {
             if (err) {
                 console.error(err);
                 reject(err);
             }
-            resolve();
+            // Add a row
+            doc.addRow(1, data, function(err) {
+                if (err) {
+                    console.error(err);
+                    reject(err);
+                }
+                resolve();
+            });
         });
     });
-  });
 };
