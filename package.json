@@ -5,12 +5,15 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "DEBUG=telegram-bot:* nodemon index.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "async": "^2.6.1",
+    "debug": "^4.1.0",
+    "dotenv": "^6.1.0",
     "dropbox": "^4.0.9",
     "fs": "0.0.1-security",
     "google-spreadsheet": "^2.0.3",
@@ -19,5 +22,8 @@
     "https": "^1.0.0",
     "isomorphic-fetch": "^2.2.1",
     "telegraf": "^3.22.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.4"
   }
 }

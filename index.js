@@ -1,3 +1,6 @@
+// dotenv parsing
+require('dotenv').config();
+
 // packages
 const Telegraf = require('telegraf');
 const fetch = require('isomorphic-fetch');
@@ -6,6 +9,9 @@ const GoogleSpreadsheet = require('google-spreadsheet');
 const Dropbox = require('dropbox').Dropbox;
 const https = require('https');
 const fs = require('fs');
+const debug = require('debug')('telegram-bot:debug');
+const trace = require('debug')('telegram-bot:trace');
+const error = require('debug')('telegram-bot:error');
 
 // Credentials and other runtime config
 const telegramToken = process.env.TELEGRAM_TOKEN;
@@ -27,20 +33,6 @@ var dbx = new Dropbox({
     accessToken: dropboxToken
 });
 
-// Authenticate with the Google Spreadsheets API.
-function addToSpreadSheet(data) {
-    doc.useServiceAccountAuth(creds, function (err) {
-        if(err){
-            console.log(err);
-        }
-        doc.addRow(1, data, function (err) {
-            if (err) {
-                console.log(err);
-            }
-        });
-    });
-}
-
 // // Register session middleware
 bot.use(session());
 
@@ -49,7 +41,7 @@ bot.use((ctx, next) => {
     const start = new Date();
     return next().then(() => {
         const ms = new Date() - start;
-        console.log('response time %sms', ms);
+        trace('response time %sms', ms);
     });
 });
 
@@ -57,18 +49,25 @@ bot.use((ctx, next) => {
 // Only works for this bot instance (lost on restart), but it should help catch simple race conditions and duplicate hears() invocations
 const nominatedIds = [];
 
+// Error handling
+bot.catch((err) => {
+  error('Something went horribly wrong.  Swallow the error.', err);
+});
+
 // Text messages handling
 bot.hears(/^nominate$/i, (ctx) => {
     if (!ctx.message.reply_to_message) {
-        ctx.telegram.sendMessage(ctx.message.chat.id, `Please reply to the message you want to nominate`, {
+        return ctx.telegram.sendMessage(ctx.message.chat.id, `Please reply to the message you want to nominate.`, {
             reply_to_message_id: ctx.message.message_id
+        }).catch(err => {
+            error(err);
+            return Promise.reject(err);
         });
-        return;
     } else if (nominatedIds.includes(ctx.message.reply_to_message.message_id)) {
+        debug(`message ${ctx.message.reply_to_message.message_id} already seen - ignoring`);
         return;
     } else {
-        nominatedIds.push(ctx.message.reply_to_message.message_id);
-        data = {
+        const data = {
             nominee: ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name,
             message: ctx.message.reply_to_message.text,
             nominator: ctx.message.from.first_name + " " + ctx.message.from.last_name,
@@ -79,76 +78,122 @@ bot.hears(/^nominate$/i, (ctx) => {
         };
         // This gets the information about the gifs
         if (ctx.message.reply_to_message.animation) {
-            fileId = ctx.message.reply_to_message.animation.file_id;
-            ctx.telegram.getFile(fileId).then(function (response) {
-                fileName = fileId + ".mp4";
-                filePath = writePath + fileName;
-                var file = fs.createWriteStream(filePath);
-                var request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, function (response) {
-                    response.pipe(file).on("finish", function () {
-                        uploadFile = fs.readFileSync(filePath);
-                        dbx.filesUpload({
-                                path: gifPath + "/" + fileName,
-                                contents: uploadFile,
-                                autorename: true
-                            })
-                            .then(function (response) {
-                                data.linkToGif = dropboxURL + response.path_lower;
-                                data.message = "N/A";
-                                addToSpreadSheet(data);
-                                ctx.replyWithMarkdown(`Thanks for your nomination. It's safely stored in a database that Karl can't get to`);
-                                console.log("Message the was nominated was " + ctx.message.reply_to_message.text + "\nNominated By " + ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name);
-                            })
-                            .catch(function (error) {
-                                console.error(error);
-                            });
-                        fs.unlinkSync(filePath);
-                    });
-                });
-
+            const fileId = ctx.message.reply_to_message.animation.file_id;
+            return downloadFileFromTelegram(ctx, fileId, 'mp4').then(uploadFileToDropbox.bind(null, gifPath)).then(response => {
+                data.linkToGif = dropboxURL + response.path_lower;
+                data.message = "N/A";
+                return saveNomination(ctx, data);
             });
         } else if (ctx.message.reply_to_message.photo) {
-            // This is where the photo logic happens
-            fileId = ctx.message.reply_to_message.photo[2].file_id;
-            ctx.telegram.getFile(fileId).then(function (response) {
-                extenstion = response.file_path.split(".")[1];
-                fileName = response.file_id + "." + extenstion;
-                filePath = writePath + fileName;
-                var file = fs.createWriteStream(filePath);
-                var request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, function (response) {
-                    response.pipe(file).on("finish", function () {
-                        uploadFile = fs.readFileSync(filePath);
-                        dbx.filesUpload({
-                                path: photosPath + "/" + fileName,
-                                contents: uploadFile,
-                                autorename: true
-                            })
-                            .then(function (response) {
-                                data.linkToPhoto = dropboxURL + response.path_lower;
-                                data.message = "N/A";
-                                addToSpreadSheet(data);
-                                ctx.replyWithMarkdown(`Thanks for your nomination. It's safely stored in a database that Karl can't get to`);
-                                console.log("Message the was nominated was " + ctx.message.reply_to_message.text + "\nNominated By " + ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name);
-                            })
-                            .catch(function (error) {
-                                console.error(error);
-                            });
-                        fs.unlinkSync(filePath);
-                    });
-                });
+            // Find the photo we want
+            const photo = ctx.message.reply_to_message.photo.reduce((acc, currVal) => {
+                return !acc ? currVal : (acc.width > currVal.width ? acc : currVal);
+            }, null);
+            if (!photo)  {
+              error(`screwy photo in message ${ctx.message.reply_to_message.message_id}`);
+              return;
+            }
+            const fileId = photo.file_id;
+            return downloadFileFromTelegram(ctx, fileId).then(uploadFileToDropbox.bind(null, photosPath)).then(response => {
+                data.linkToPhoto = dropboxURL + response.path_lower;
+                data.message = "N/A";
+                return saveNomination(ctx, data);
             });
         } else {
-            addToSpreadSheet(data);
-            // Use ctx.telegram.sendMessage because ctx.replyX don't seem to properly reply
-            // Reply to the nominated message
-            // This might help in cases where the bot runs into problems - trace what the bot is replying to
-            ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
-              reply_to_message_id: ctx.message.reply_to_message.message_id
-            });
-            console.log("Message the was nominated was " + ctx.message.reply_to_message.text + "\nNominated By " + ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name);
+            return saveNomination(ctx, data);
         }
     }
 
 });
 
 bot.startPolling();
+
+const downloadFileFromTelegram = function(ctx, fileId, defaultExtension) {
+    // Get file *information* from Telegram
+    return ctx.telegram.getFile(fileId).then(response => {
+        const extension = defaultExtension || response.file_path.split(".")[1];
+        return new Promise((resolve, reject) => {
+            const filePath = `${writePath}/${fileId}.${extension}`;
+            const file = fs.createWriteStream(filePath);
+            // Now *download* it somewhere temporary
+            const request = https.get("https://api.telegram.org/file/bot" + telegramToken + "/" + response.file_path, response => {
+                response.pipe(file).on("finish", () => {
+                    return resolve(filePath);
+                }).on("error", err => {
+                    return reject(err);
+                });
+            });
+        });
+    }).catch(err => {
+        error(err);
+        return Promise.reject(err);
+    });
+};
+
+const uploadFileToDropbox = function(destinationPath, filePath) {
+    // Get the fileName
+    const fileName = filePath.match(/^.+\/([^/]+?)$/)[1];
+    // Load the file into memory
+    const file = fs.readFileSync(filePath);
+    if (!file) {
+        return Promise.reject('could not read temporary file');
+    }
+    return dbx.filesUpload({
+            path: `${destinationPath}/${fileName}`,
+            contents: file,
+            autorename: true
+        })
+        .catch(function(err) {
+            error(err);
+            return Promise.reject(err);
+        })
+        .finally(() => {
+            try {
+                fs.unlinkSync(filePath);
+            } catch (e) {
+                // Meh
+            }
+        });
+};
+
+const saveNomination = function(ctx, data) {
+    return updateSpreadsheet(data).then(() => {
+        // Use ctx.telegram.sendMessage because ctx.replyX don't seem to properly reply
+        // Reply to the nominated message
+        // This might help in cases where the bot runs into problems - trace what the bot is replying to
+        return ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
+            reply_to_message_id: ctx.message.reply_to_message.message_id
+        }).then(() => {
+            debug(`${data.nominator} nominated message '${data.message} with ID ${ctx.message.message_id}'`);
+            // Don't re-process stuff we've seen already
+            nominatedIds.push(ctx.message.reply_to_message.message_id);
+        }).catch(err => {
+            if (err.description === "Forbidden: bot was kicked from the group chat") {
+              // Meh - we saved it, we don't HAVE to tell anyone about it
+              return Promise.resolve();
+            }
+            error(err);
+            return Promise.reject(err);
+        });
+    });
+};
+
+const updateSpreadsheet = function(data) {
+    return new Promise((resolve, reject) => {
+        // Authenticate with the Google Spreadsheets API.
+        doc.useServiceAccountAuth(creds, function(err) {
+            if (err) {
+                error(err);
+                return reject(err);
+            }
+            // Add a row
+            doc.addRow(1, data, function(err) {
+                if (err) {
+                    error(err);
+                    return reject(err);
+                }
+                return resolve();
+            });
+        });
+    });
+};

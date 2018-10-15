@@ -40,9 +40,17 @@ Send a message to BotFather:
 * Then reply with `Disable`
 
 ## Configuration
-The code expects the `SHEET_ID`, `TELEGRAM_TOKEN` and `creds` to be supplied as environment variables.
+The code expects some environment variables to be provided, and will respect [dotenv](https://www.npmjs.com/package/dotenv) usage.
+
+See `.env.template` for details.
+
+Additionally, the code expects your Google credentials (for accessing the sheet) in the file `creds.json`.  See https://www.npmjs.com/package/google-spreadsheet#service-account-recommended-method for instructions to retrieve the JSON that should be in this file.
 
 ## Running the app
-There are many ways to run Node apps. The simples is to run `node index.js' You will need to make sure the environment variables are correctly set for the application to start.
-
-
+You will need to make sure the environment variables are correctly set (as above) for the application to start.
+### Development
+```sh
+npm run dev
+```
+### Production
+The simplest way to run this is via `DEBUG=telegram-bot:error node index.js`.
