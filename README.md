@@ -48,7 +48,8 @@ Additionally, the code expects your Google credentials (for accessing the sheet)
 
 ## Running the app
 You will need to make sure the environment variables are correctly set (as above) for the application to start.
-### Development
+
+### Development
 ```sh
 npm run dev
 ```
