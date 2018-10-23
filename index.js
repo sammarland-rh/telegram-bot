@@ -65,7 +65,12 @@ bot.hears(/^nominate$/i, (ctx) => {
         });
     } else if (nominatedIds.includes(ctx.message.reply_to_message.message_id)) {
         debug(`message ${ctx.message.reply_to_message.message_id} already seen - ignoring`);
-        return;
+        return ctx.telegram.sendMessage(ctx.message.chat.id, `Sorry ${ctx.message.from.first_name} - this message has already been nominated!`, {
+            reply_to_message_id: ctx.message.reply_to_message.message_id
+        }).catch(err => {
+            error(err);
+            return Promise.reject(err);
+        });
     } else {
         const data = {
             nominee: ctx.message.reply_to_message.from.first_name + " " + ctx.message.reply_to_message.from.last_name,
