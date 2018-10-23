@@ -54,8 +54,10 @@ bot.catch((err) => {
   error('Something went horribly wrong.  Swallow the error.', err);
 });
 
+const regex = new RegExp(process.env.TRIGGER_REGEX || /^nominate$/, process.env.TRIGGER_REGEX_FLAGS || 'i');
+
 // Text messages handling
-bot.hears(/^nominate$/i, (ctx) => {
+bot.hears(regex, (ctx) => {
     if (!ctx.message.reply_to_message) {
         return ctx.telegram.sendMessage(ctx.message.chat.id, `Please reply to the message you want to nominate.`, {
             reply_to_message_id: ctx.message.message_id
