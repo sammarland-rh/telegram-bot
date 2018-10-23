@@ -55,3 +55,9 @@ npm run dev
 ```
 ### Production
 The simplest way to run this is via `DEBUG=telegram-bot:error node index.js`.
+
+#### pm2
+If using pm2:
+1. Copy `process.json.template` to `process.json`.
+2. Update your new `process.json`, to specify the correct location of `index.js` in `cwd`, replacing `INSTALL_DIR`.
+3. `pm2 start process.json`.

@@ -1,0 +1,13 @@
+{
+    "apps": [{
+        "name": "telegrambot",
+        "script": "./index.js",
+        "//": "INSTALL_DIR ie. /root/telegram-bot",
+        "cwd": "INSTALL_DIR",
+        "watch": true,
+        "env": {
+            "NODE_ENV": "production",
+            "DEBUG": "telegram-bot:*"
+        }
+    }]
+}
