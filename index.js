@@ -167,7 +167,7 @@ const saveNomination = function(ctx, data) {
         // Use ctx.telegram.sendMessage because ctx.replyX don't seem to properly reply
         // Reply to the nominated message
         // This might help in cases where the bot runs into problems - trace what the bot is replying to
-        return ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Karl can't get to.`, {
+        return ctx.telegram.sendMessage(ctx.message.chat.id, `${ctx.message.from.first_name} nominated this message!  It's safely stored in a database that Graeme can't \'accidentally\' break.`, {
             reply_to_message_id: ctx.message.reply_to_message.message_id
         }).then(() => {
             debug(`${data.nominator} nominated message '${data.message} with ID ${ctx.message.message_id}'`);
